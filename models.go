@@ -3,7 +3,7 @@ package main
 // TriggerRequest gago
 type TriggerRequest struct {
 	Status    string `json:"status"`
-	TicketID  int    `json:"id"`
+	TicketID  string `json:"id"`
 	UpdatedAt string `json:"updated_at"`
 }
 

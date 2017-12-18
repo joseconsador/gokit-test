@@ -9,8 +9,11 @@ import (
 	"os"
 
 	"github.com/benmanns/goworker"
+	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/ratelimit"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"golang.org/x/time/rate"
 )
 
 // ErrEmpty is returned when input string is empty
@@ -30,27 +33,29 @@ func init() {
 	goworker.SetSettings(settings)
 }
 
+func loggingEndpointMiddleware(logger log.Logger) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (interface{}, error) {
+			logger.Log("msg", "calling endpoint")
+			defer logger.Log("msg", "called endpoint")
+			return next(ctx, request)
+		}
+	}
+}
+
 func main() {
 	logger := log.NewLogfmtLogger(os.Stderr)
-	esvc := eventService{}
 	tsvc := targetService{}
-
-	createTicketHandlerEndpoint := MakeCreateTicketEndpoint(esvc)
-	//createTicketHandlerEndpoint = loggingMiddleware(log.With(logger, "method", "createTicket"))(createTicketHandlerEndpoint)
-
-	createTicketHandler := httptransport.NewServer(
-		createTicketHandlerEndpoint,
-		DecodeCreateTicketRequest,
-		encodeResponse,
-	)
+	triggerEndpoint := MakeTriggerHandlerEndpoint(tsvc)
+	triggerEndpoint = loggingEndpointMiddleware(logger)(triggerEndpoint)
+	triggerEndpoint = ratelimit.NewDelayingLimiter(rate.NewLimiter(2, 1))(triggerEndpoint)
 
 	triggerHandler := httptransport.NewServer(
-		MakeTriggerHandlerEndpoint(tsvc),
+		triggerEndpoint,
 		DecodeTriggerRequest,
 		encodeResponse,
 	)
 
-	http.Handle("/createTicket", createTicketHandler)
 	http.Handle("/trigger", triggerHandler)
 
 	logger.Log("err", http.ListenAndServe(":8080", nil))

@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/benmanns/goworker"
+	"github.com/subosito/gotenv"
 )
 
 type (
@@ -41,6 +43,17 @@ type (
 		Title string `json:"title"`
 		Text  string `json:"text"`
 	}
+
+	SlackCreds struct {
+		Webhook     string
+		AccessToken string
+	}
+
+	ZDCreds struct {
+		Subdomain string
+		Username  string
+		Token     string
+	}
 )
 
 func myFunc(queue string, args ...interface{}) error {
@@ -58,15 +71,17 @@ func postToSlack(ticket Ticket) {
 	someMessage := SlackMessageAttachment{Title: "GAGO KA", Text: ticket.Subject}
 	attachments := []SlackMessageAttachment{someMessage}
 
+	creds := SlackCreds{Webhook: os.Getenv("SLACK_WEBHOOK"), AccessToken: os.Getenv("SLACK_ACCESS_TOKEN")}
+
 	message := SlackMessage{Text: fmt.Sprintf("A ticket has been %s", ticket.Status), Attachments: attachments}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(message)
 
 	client := &http.Client{}
 
-	req, _ := http.NewRequest("POST", "https://hooks.slack.com/services/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", b)
+	req, _ := http.NewRequest("POST", creds.Webhook, b)
 
-	req.Header.Add("Authorization", "Bearer <SLACK API TOKEN>")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", creds.AccessToken))
 	req.Header.Set("Content-Type", "application/json")
 	resp, _ := client.Do(req)
 
@@ -76,13 +91,15 @@ func postToSlack(ticket Ticket) {
 }
 
 func getTicket(ticketID string) Ticket {
+	creds := ZDCreds{Subdomain: os.Getenv("ZENDESK_SUBDOMAIN"), Username: os.Getenv("ZENDESK_USER"), Token: os.Getenv("ZENDESK_TOKEN")}
+
 	client := &http.Client{}
 
-	var url = fmt.Sprintf("https://<subdomain>.zendesk.com/api/v2/tickets/%s.json", ticketID)
+	var url = fmt.Sprintf("https://%s.zendesk.com/api/v2/tickets/%s.json", creds.Subdomain, ticketID)
 
 	req, _ := http.NewRequest("GET", url, new(bytes.Buffer))
 
-	data := []byte("username/token:<TOKEN>")
+	data := []byte(fmt.Sprintf("%s/token:%s", creds.Username, creds.Token))
 	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString(data))
 	req.Header.Set("Content-Type", "application/json")
 	resp, _ := client.Do(req)
@@ -98,6 +115,7 @@ func getTicket(ticketID string) Ticket {
 }
 
 func init() {
+	gotenv.Load()
 	settings := goworker.WorkerSettings{
 		URI:            "redis://localhost:6379/",
 		Connections:    100,
@@ -106,7 +124,7 @@ func init() {
 		ExitOnComplete: false,
 		Concurrency:    2,
 		Namespace:      "resque:",
-		Interval:       0.01,
+		Interval:       2,
 	}
 	goworker.SetSettings(settings)
 	goworker.Register("MyClass", myFunc)

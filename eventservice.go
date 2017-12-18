@@ -1,20 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/benmanns/goworker"
 )
 
 // TargetService Gago
 type TargetService interface {
-	MakeJob(context.Context, string, int) error
+	MakeJob(context.Context, string, string) error
 }
 
 // StringService Gago
@@ -25,7 +19,7 @@ type StringService interface {
 
 type targetService struct{}
 
-func (targetService) MakeJob(_ context.Context, status string, ticketID int) error {
+func (targetService) MakeJob(_ context.Context, status string, ticketID string) error {
 	return goworker.Enqueue(&goworker.Job{
 		Queue: "myqueue",
 		Payload: goworker.Payload{
