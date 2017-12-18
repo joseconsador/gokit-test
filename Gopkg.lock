@@ -56,6 +56,12 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
+
+[[projects]]
   name = "github.com/subosito/gotenv"
   packages = ["."]
   revision = "009e1f9581dc712aba5682a279dee155ca3eeded"
@@ -82,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2136485f4f21db399e12c874a7548bd8c5886576bc2b0cb7e4ea3a0f6dac67f9"
+  inputs-digest = "ea758a70b71131de9f43644b1efa104f7153602e59e53b657d27879cc3652fab"
   solver-name = "gps-cdcl"
   solver-version = 1

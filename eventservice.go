@@ -2,19 +2,38 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/benmanns/goworker"
 )
 
+type (
+	// SlackMessage gago eh
+	SlackMessage struct {
+		Text        string                   `json:"text"`
+		Attachments []SlackMessageAttachment `json:"attachments"`
+	}
+
+	// SlackMessageAttachment gago e
+	SlackMessageAttachment struct {
+		Title string `json:"title"`
+		Text  string `json:"text"`
+	}
+)
+
+type DoesNotQueueService interface {
+	SendResponse(context.Context, string) (SlackMessage, error)
+}
+
+type helloService struct{}
+
+func (helloService) SendResponse(_ context.Context, command string) (SlackMessage, error) {
+	return SlackMessage{Text: fmt.Sprintf("Hello ahole you typed `%s`", command)}, nil
+}
+
 // TargetService Gago
 type TargetService interface {
 	MakeJob(context.Context, string, string) error
-}
-
-// StringService Gago
-type StringService interface {
-	Uppercase(context.Context, string) (string, error)
-	Count(context.Context, string) int
 }
 
 type targetService struct{}

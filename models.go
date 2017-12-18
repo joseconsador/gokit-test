@@ -1,5 +1,15 @@
 package main
 
+type CommandRequest struct {
+	ChannelID   string `json:"channel_id",mapstructure:"channel_id"`
+	ChannelName string `json:"channel_name",mapstructure:"channel_name"`
+	UserID      string `json:"user_id",mapstructure:"user_id"`
+	UserName    string `json:"user_name",mapstructure:"user_name"`
+	Command     string `json:"command",mapstructure:"command"`
+	Text        string `json:"text",mapstructure:"text"`
+	ResponseURL string `json:"response_url",mapstructure:"response_url"`
+}
+
 // TriggerRequest gago
 type TriggerRequest struct {
 	Status    string `json:"status"`

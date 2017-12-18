@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-kit/kit/endpoint"
+	"github.com/mitchellh/mapstructure"
 )
 
 func MakeTriggerHandlerEndpoint(svc TargetService) endpoint.Endpoint {
@@ -29,6 +32,24 @@ func DecodeTriggerRequest(_ context.Context, r *http.Request) (interface{}, erro
 	return request, nil
 }
 
+func DecodeCommandRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request CommandRequest
+	r.ParseForm()
+
+	formData := make(map[string]string)
+
+	for k, v := range r.PostForm {
+		formData[k] = strings.Join(v, "")
+	}
+
+	if err := mapstructure.Decode(formData, &request); err != nil {
+		fmt.Println(request)
+		return nil, err
+	}
+
+	return request, nil
+}
+
 func MakeCreateTicketEndpoint(svc EventService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(EventRequest)
@@ -46,4 +67,17 @@ func DecodeCreateTicketRequest(_ context.Context, r *http.Request) (interface{},
 		return nil, err
 	}
 	return request, nil
+}
+
+func MakeHelpEndpoint(svc DoesNotQueueService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(CommandRequest)
+		slackResponse, err := svc.SendResponse(ctx, req.Command)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return slackResponse, nil
+	}
 }

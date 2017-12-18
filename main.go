@@ -56,11 +56,21 @@ func main() {
 		encodeResponse,
 	)
 
+	hsvc := helloService{}
+
+	helpHandler := httptransport.NewServer(
+		loggingEndpointMiddleware(logger)(MakeHelpEndpoint(hsvc)),
+		DecodeCommandRequest,
+		encodeResponse,
+	)
+
 	http.Handle("/trigger", triggerHandler)
+	http.Handle("/help", helpHandler)
 
 	logger.Log("err", http.ListenAndServe(":8080", nil))
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)
 }
